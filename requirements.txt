@@ -1,0 +1,9 @@
+django==4.2.7
+djangorestframework==3.14.0
+spyne==2.14.0
+requests==2.31.0
+zeep==4.2.1
+pyyaml==6.0.1
+django-cors-headers==4.2.0
+swagger-ui-py==0.1.7
+lxml==4.9.3

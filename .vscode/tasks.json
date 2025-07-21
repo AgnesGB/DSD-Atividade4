@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start REST Service",
+			"type": "shell",
+			"command": "cd rest_service/tictactoe && python manage.py runserver 8001",
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}
