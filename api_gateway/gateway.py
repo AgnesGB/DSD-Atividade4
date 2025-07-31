@@ -12,11 +12,15 @@ REST_URL = 'http://localhost:5001'
 
 # Funções auxiliares para HATEOAS
 def add_links(resource, game_id=None):
-    links = [{"rel": "games", "href": "/api/games", "method": "POST", "description": "Criar novo jogo"}]
+    links = [
+        {"rel": "games", "href": "/api/games", "method": "POST", "description": "Criar novo jogo"},
+        {"rel": "games_list", "href": "/api/games/list", "method": "GET", "description": "Listar jogos disponíveis"}
+    ]
     
     if game_id:
         links.extend([
             {"rel": "self", "href": f"/api/games/{game_id}", "method": "GET", "description": "Obter estado do jogo"},
+            {"rel": "join", "href": f"/api/games/{game_id}/join", "method": "POST", "description": "Entrar em um jogo existente"},
             {"rel": "move", "href": f"/api/games/{game_id}/move", "method": "POST", "description": "Fazer uma jogada"}
         ])
     
@@ -37,14 +41,25 @@ def api_root():
 
 @app.route("/api/games", methods=["POST"])
 def criar_jogo():
-    resp = requests.post(f"{REST_URL}/games")
+    resp = requests.post(f"{REST_URL}/games", json=request.json)
     data = resp.json()
     game_id = data.get("gameId")
     return jsonify(add_links(data, game_id))
 
+@app.route("/api/games/list", methods=["GET"])
+def listar_jogos():
+    resp = requests.get(f"{REST_URL}/games/list")
+    return jsonify(resp.json())
+
 @app.route("/api/games/<gid>", methods=["GET"])
 def jogo(gid):
     resp = requests.get(f"{REST_URL}/games/{gid}")
+    data = resp.json()
+    return jsonify(add_links(data, gid))
+
+@app.route("/api/games/<gid>/join", methods=["POST"])
+def entrar_jogo(gid):
+    resp = requests.post(f"{REST_URL}/games/{gid}/join", json=request.json)
     data = resp.json()
     return jsonify(add_links(data, gid))
 

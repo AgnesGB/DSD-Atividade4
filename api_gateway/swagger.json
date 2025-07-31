@@ -28,13 +28,44 @@
     "/games": {
       "post": {
         "summary": "Criar novo jogo",
-        "description": "Cria um novo jogo da velha",
+        "description": "Cria um novo jogo da velha com um jogador inicial",
+        "parameters": [
+          {
+            "name": "player",
+            "in": "body",
+            "description": "Dados do jogador",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "playerName": {
+                  "type": "string",
+                  "description": "Nome do jogador"
+                }
+              }
+            }
+          }
+        ],
         "produces": [
           "application/json"
         ],
         "responses": {
           "201": {
             "description": "Jogo criado com sucesso"
+          }
+        }
+      }
+    },
+    "/games/list": {
+      "get": {
+        "summary": "Listar jogos disponíveis",
+        "description": "Lista todos os jogos aguardando um segundo jogador",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de jogos disponíveis"
           }
         }
       }
@@ -65,6 +96,50 @@
         }
       }
     },
+    "/games/{gameId}/join": {
+      "post": {
+        "summary": "Entrar em um jogo existente",
+        "description": "Permite que um segundo jogador entre em um jogo existente",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "description": "ID do jogo",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "player",
+            "in": "body",
+            "description": "Dados do jogador",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "playerName": {
+                  "type": "string",
+                  "description": "Nome do jogador"
+                }
+              }
+            }
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Jogador entrou com sucesso"
+          },
+          "400": {
+            "description": "Jogo já tem dois jogadores"
+          },
+          "404": {
+            "description": "Jogo não encontrado"
+          }
+        }
+      }
+    },
     "/games/{gameId}/move": {
       "post": {
         "summary": "Fazer uma jogada",
@@ -80,7 +155,7 @@
           {
             "name": "move",
             "in": "body",
-            "description": "Posição da jogada (0-8)",
+            "description": "Dados da jogada",
             "required": true,
             "schema": {
               "type": "object",
@@ -88,6 +163,10 @@
                 "pos": {
                   "type": "integer",
                   "description": "Posição no tabuleiro (0-8)"
+                },
+                "jogador": {
+                  "type": "string",
+                  "description": "Símbolo do jogador (X ou O)"
                 }
               }
             }
@@ -155,6 +234,19 @@
         "description": "Posição no tabuleiro ('X', 'O' ou vazio)"
       }
     },
+    "Jogador": {
+      "type": "object",
+      "properties": {
+        "nome": {
+          "type": "string",
+          "description": "Nome do jogador"
+        },
+        "simbolo": {
+          "type": "string",
+          "description": "Símbolo do jogador ('X' ou 'O')"
+        }
+      }
+    },
     "Jogo": {
       "type": "object",
       "properties": {
@@ -167,7 +259,17 @@
         },
         "status": {
           "type": "string",
-          "description": "Status do jogo ('in_progress', 'completed')"
+          "description": "Status do jogo ('waiting_opponent', 'in_progress', 'completed')"
+        },
+        "jogador_x": {
+          "$ref": "#/definitions/Jogador"
+        },
+        "jogador_o": {
+          "$ref": "#/definitions/Jogador"
+        },
+        "vencedor": {
+          "type": "string",
+          "description": "Vencedor do jogo ('X', 'O', 'empate' ou null)"
         },
         "_links": {
           "type": "array",

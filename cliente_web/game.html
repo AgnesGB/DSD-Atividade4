@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jogo da Velha - Tabuleiro</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 50px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .game-info {
+            margin-bottom: 20px;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-gap: 10px;
+            margin: 20px auto;
+            width: 300px;
+        }
+        .cell {
+            background-color: #eee;
+            border-radius: 5px;
+            height: 100px;
+            line-height: 100px;
+            font-size: 50px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .cell:hover {
+            background-color: #ddd;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            min-height: 20px;
+        }
+        .success { background-color: #dff0d8; color: #3c763d; }
+        .info { background-color: #d9edf7; color: #31708f; }
+        .warning { background-color: #fcf8e3; color: #8a6d3b; }
+        .error { background-color: #f2dede; color: #a94442; }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .player {
+            display: inline-block;
+            margin: 10px 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            min-width: 150px;
+        }
+        .current-turn {
+            border: 2px solid #4CAF50;
+            background-color: #f0fff0;
+        }
+        .waiting {
+            color: #999;
+            font-style: italic;
+        }
+        #rankingResult {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Jogo da Velha Multiplayer</h1>
+        
+        <div class="game-info">
+            <p>Jogo ID: <span id="gameId">-</span></p>
+            <p>Seu nome: <span id="playerName">-</span></p>
+            <p>Você é: <span id="playerSymbol">-</span></p>
+            <p id="turnInfo">Aguardando...</p>
+        </div>
+        
+        <div class="game-details">
+            <div id="player-x" class="player">
+                <h3>Jogador X</h3>
+                <div id="player-x-name">Aguardando...</div>
+            </div>
+            <div id="player-o" class="player">
+                <h3>Jogador O</h3>
+                <div id="player-o-name">Aguardando...</div>
+            </div>
+        </div>
+        
+        <div id="status" class="info">Carregando jogo...</div>
+        <div id="player-info"></div>
+        
+        <div class="board" id="board">
+            <div class="cell" onclick="fazerJogada(0)"></div>
+            <div class="cell" onclick="fazerJogada(1)"></div>
+            <div class="cell" onclick="fazerJogada(2)"></div>
+            <div class="cell" onclick="fazerJogada(3)"></div>
+            <div class="cell" onclick="fazerJogada(4)"></div>
+            <div class="cell" onclick="fazerJogada(5)"></div>
+            <div class="cell" onclick="fazerJogada(6)"></div>
+            <div class="cell" onclick="fazerJogada(7)"></div>
+            <div class="cell" onclick="fazerJogada(8)"></div>
+        </div>
+        
+        <div>
+            <button onclick="atualizarJogo()">Atualizar Jogo</button>
+            <button onclick="window.location.href='index.html'">Voltar</button>
+        </div>
+        
+        <div style="margin-top: 20px; font-size: 12px;">
+            <p>Consultar Ranking: <input type="text" id="playerRanking" placeholder="Nome do jogador">
+            <button onclick="consultarRanking()">Consultar</button></p>
+            <div id="rankingResult"></div>
+        </div>
+        
+        <div style="margin-top: 20px; font-size: 10px; color: #999;">
+            <p>Detalhes do jogo: <button onclick="toggleDebug()">Mostrar/Esconder</button></p>
+            <pre id="info" style="display: none; text-align: left; background: #f5f5f5; padding: 10px; border-radius: 5px; overflow: auto; max-height: 200px;"></pre>
+        </div>
+    </div>
+    
+    <script>
+        // Variáveis globais
+        let gameId = '';
+        let playerName = '';
+        let playerSymbol = '';
+        let gameStatus = '';
+        let refreshInterval = null;
+        
+        // Inicialização
+        window.onload = function() {
+            // Carregar dados do jogo da sessão
+            gameId = sessionStorage.getItem('gameId');
+            playerName = sessionStorage.getItem('playerName');
+            playerSymbol = sessionStorage.getItem('playerSymbol');
+            
+            // Se não tiver dados, pedir para o usuário
+            if (!gameId || !playerName || !playerSymbol) {
+                document.getElementById('status').innerText = "Dados do jogo não encontrados. Redirecionando...";
+                setTimeout(() => window.location.href = 'index.html', 3000);
+                return;
+            }
+            
+            // Mostrar informações do jogo
+            document.getElementById('gameId').innerText = gameId;
+            document.getElementById('playerName').innerText = playerName;
+            document.getElementById('playerSymbol').innerText = playerSymbol;
+            
+            // Mostrar informações do jogador atual
+            document.getElementById('player-info').innerText = `Você está jogando como ${playerSymbol} (${playerName})`;
+            
+            // Iniciar o jogo
+            atualizarJogo();
+            
+            // Configurar atualização automática
+            refreshInterval = setInterval(atualizarJogo, 3000);
+        };
+        
+        // Função para atualizar o estado do jogo
+        async function atualizarJogo() {
+            if (!gameId) return;
+            
+            try {
+                let res = await fetch(`http://localhost:5000/api/games/${gameId}`);
+                let data = await res.json();
+                
+                // Atualizar informações no console
+                document.getElementById("info").innerText = JSON.stringify(data, null, 2);
+                
+                // Atualizar informações dos jogadores
+                if (data.jogador_x) {
+                    document.getElementById("player-x-name").innerText = data.jogador_x.nome;
+                }
+                
+                if (data.jogador_o) {
+                    document.getElementById("player-o-name").innerText = data.jogador_o.nome;
+                } else {
+                    document.getElementById("player-o-name").innerHTML = '<span class="waiting">Aguardando segundo jogador...</span>';
+                }
+                
+                // Destacar jogador atual
+                document.getElementById("player-x").classList.toggle("current-turn", data.turno === "X");
+                document.getElementById("player-o").classList.toggle("current-turn", data.turno === "O");
+                
+                // Atualizar status do jogo
+                gameStatus = data.status;
+                updateGameStatus(data);
+                
+                // Renderizar tabuleiro
+                renderizarTabuleiro(data.tabuleiro, data.turno);
+                
+                // Se o jogo terminou, limpar o intervalo de atualização
+                if (data.status === "completed") {
+                    clearInterval(refreshInterval);
+                }
+            } catch (error) {
+                document.getElementById("status").innerText = `Erro: ${error.message}`;
+                document.getElementById("info").innerText = `Erro: ${error.message}`;
+            }
+        }
+        
+        // Atualizar a mensagem de status do jogo
+        function updateGameStatus(data) {
+            const statusElement = document.getElementById("status");
+            
+            if (data.status === "waiting_opponent") {
+                statusElement.innerHTML = '<span class="waiting">Aguardando segundo jogador...</span>';
+                statusElement.className = "info";
+            }
+            else if (data.status === "in_progress") {
+                if (data.turno === playerSymbol) {
+                    statusElement.innerText = "É a sua vez de jogar!";
+                    statusElement.className = "success";
+                } else {
+                    statusElement.innerHTML = '<span class="waiting">Aguardando jogada do adversário...</span>';
+                    statusElement.className = "warning";
+                }
+            }
+            else if (data.status === "completed") {
+                if (data.vencedor === "empate") {
+                    statusElement.innerText = "Jogo encerrado: Empate!";
+                    statusElement.className = "info";
+                }
+                else if (data.vencedor === playerSymbol) {
+                    statusElement.innerText = "Parabéns! Você venceu!";
+                    statusElement.className = "success";
+                }
+                else {
+                    statusElement.innerText = "Você perdeu. Tente novamente!";
+                    statusElement.className = "error";
+                }
+            }
+        }
+        
+        // Renderizar o tabuleiro
+        function renderizarTabuleiro(tabuleiro, turnoAtual) {
+            const cells = document.querySelectorAll('.cell');
+            
+            for (let i = 0; i < 9; i++) {
+                cells[i].textContent = tabuleiro[i] || '';
+                cells[i].className = 'cell';
+                
+                if (tabuleiro[i] === "X") {
+                    cells[i].classList.add("x");
+                } else if (tabuleiro[i] === "O") {
+                    cells[i].classList.add("o");
+                }
+                
+                // Verificar se é permitido fazer jogada
+                const podeJogar = gameStatus === "in_progress" && 
+                                turnoAtual === playerSymbol && 
+                                tabuleiro[i] === "";
+                                
+                if (!podeJogar) {
+                    cells[i].classList.add("disabled");
+                }
+            }
+        }
+        
+        // Fazer uma jogada
+        async function fazerJogada(pos) {
+            try {
+                let res = await fetch(`http://localhost:5000/api/games/${gameId}/move`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        pos: pos,
+                        jogador: playerSymbol,
+                        playerName: playerName
+                    })
+                });
+                
+                let data = await res.json();
+                
+                if (res.status !== 200) {
+                    alert(`Erro: ${data.erro || 'Não foi possível fazer a jogada'}`);
+                    return;
+                }
+                
+                // Atualizar o jogo imediatamente após a jogada
+                atualizarJogo();
+                
+            } catch (error) {
+                document.getElementById("status").innerText = `Erro: ${error.message}`;
+            }
+        }
+        
+        // Verificar ranking do jogador atual
+        async function consultarRanking() {
+            const nome = document.getElementById('playerRanking').value || playerName;
+            
+            try {
+                let res = await fetch(`http://localhost:5000/api/ranking/${nome}`);
+                let data = await res.json();
+                
+                document.getElementById("rankingResult").innerHTML = `
+                    <p>Jogador: <strong>${data.nome}</strong></p>
+                    <p>Ranking: <strong>${data.ranking}</strong> pontos</p>
+                `;
+            } catch (error) {
+                document.getElementById("rankingResult").innerHTML = `Erro ao consultar ranking: ${error.message}`;
+            }
+        }
+        
+        // Mostrar/esconder informações de debug
+        function toggleDebug() {
+            const info = document.getElementById('info');
+            info.style.display = info.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>
+</script>
+</body>
+</html>
