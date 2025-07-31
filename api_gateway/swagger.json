@@ -1,0 +1,219 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Jogo da Velha API Gateway",
+    "description": "Gateway que integra serviços REST e SOAP para um jogo da velha",
+    "version": "1.0.0"
+  },
+  "host": "localhost:5000",
+  "basePath": "/api",
+  "schemes": [
+    "http"
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "API Root",
+        "description": "Retorna informações sobre a API e os links disponíveis",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Informações sobre a API"
+          }
+        }
+      }
+    },
+    "/games": {
+      "post": {
+        "summary": "Criar novo jogo",
+        "description": "Cria um novo jogo da velha",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "201": {
+            "description": "Jogo criado com sucesso"
+          }
+        }
+      }
+    },
+    "/games/{gameId}": {
+      "get": {
+        "summary": "Obter estado do jogo",
+        "description": "Retorna o estado atual de um jogo",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "description": "ID do jogo",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado do jogo obtido com sucesso"
+          },
+          "404": {
+            "description": "Jogo não encontrado"
+          }
+        }
+      }
+    },
+    "/games/{gameId}/move": {
+      "post": {
+        "summary": "Fazer uma jogada",
+        "description": "Executa um movimento no tabuleiro",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "description": "ID do jogo",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "move",
+            "in": "body",
+            "description": "Posição da jogada (0-8)",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "pos": {
+                  "type": "integer",
+                  "description": "Posição no tabuleiro (0-8)"
+                }
+              }
+            }
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Movimento executado com sucesso"
+          },
+          "400": {
+            "description": "Movimento inválido"
+          },
+          "404": {
+            "description": "Jogo não encontrado"
+          }
+        }
+      }
+    },
+    "/ranking/{nome}": {
+      "get": {
+        "summary": "Consultar ranking de jogador",
+        "description": "Obtém o ranking de um jogador usando um serviço SOAP",
+        "parameters": [
+          {
+            "name": "nome",
+            "in": "path",
+            "description": "Nome do jogador",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranking obtido com sucesso"
+          }
+        }
+      }
+    },
+    "/wsdl": {
+      "get": {
+        "summary": "Obter WSDL",
+        "description": "Retorna o arquivo WSDL do serviço SOAP",
+        "produces": [
+          "text/xml"
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo WSDL"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Tabuleiro": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Posição no tabuleiro ('X', 'O' ou vazio)"
+      }
+    },
+    "Jogo": {
+      "type": "object",
+      "properties": {
+        "tabuleiro": {
+          "$ref": "#/definitions/Tabuleiro"
+        },
+        "turno": {
+          "type": "string",
+          "description": "Jogador atual ('X' ou 'O')"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status do jogo ('in_progress', 'completed')"
+        },
+        "_links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Link"
+          }
+        }
+      }
+    },
+    "Link": {
+      "type": "object",
+      "properties": {
+        "rel": {
+          "type": "string",
+          "description": "Nome da relação"
+        },
+        "href": {
+          "type": "string",
+          "description": "URL do recurso"
+        },
+        "method": {
+          "type": "string",
+          "description": "Método HTTP"
+        },
+        "description": {
+          "type": "string",
+          "description": "Descrição do link"
+        }
+      }
+    },
+    "Ranking": {
+      "type": "object",
+      "properties": {
+        "nome": {
+          "type": "string",
+          "description": "Nome do jogador"
+        },
+        "ranking": {
+          "type": "integer",
+          "description": "Pontuação do jogador"
+        },
+        "tipo": {
+          "type": "string",
+          "description": "Tipo de serviço usado (SOAP)"
+        }
+      }
+    }
+  }
+}

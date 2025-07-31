@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jogo da Velha</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 5px;
+            margin-top: 20px;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            border: 1px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .status {
+            margin: 20px 0;
+        }
+        .ranking {
+            margin-top: 40px;
+        }
+        .section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Jogo da Velha com API Gateway (REST + SOAP)</h1>
+    
+    <div class="section">
+        <h2>Jogo</h2>
+        <button onclick="criarJogo()">Novo Jogo</button>
+        <div class="status" id="status">Clique em "Novo Jogo" para começar</div>
+        <div class="board" id="board"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Verificar Ranking (SOAP)</h2>
+        <input type="text" id="playerName" placeholder="Nome do jogador">
+        <button onclick="consultarRanking()">Consultar Ranking</button>
+        <div id="rankingResult"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Documentação da API</h2>
+        <p>Endpoints disponíveis:</p>
+        <ul>
+            <li><code>POST /api/games</code> - Criar novo jogo</li>
+            <li><code>GET /api/games/{id}</code> - Obter estado do jogo</li>
+            <li><code>POST /api/games/{id}/move</code> - Fazer uma jogada</li>
+            <li><code>GET /api/ranking/{nome}</code> - Obter ranking do jogador (SOAP)</li>
+        </ul>
+        <p><a href="http://localhost:5000/swagger-ui" target="_blank">Ver documentação completa (Swagger UI)</a></p>
+        <p><a href="http://localhost:5000/api/wsdl" target="_blank">Ver arquivo WSDL (SOAP)</a></p>
+    </div>
+    
+    <div class="section">
+        <h2>Resposta da API</h2>
+        <pre id="info" style="background-color: #f5f5f5; padding: 10px; overflow: auto;"></pre>
+    </div>
+
+<script>
+let gameId = null;
+
+async function criarJogo() {
+    try {
+        let res = await fetch("http://localhost:5000/api/games", {method: "POST"});
+        let data = await res.json();
+        gameId = data.gameId;
+        document.getElementById("status").innerText = `Jogo criado! ID: ${gameId}. Turno: X`;
+        document.getElementById("info").innerText = JSON.stringify(data, null, 2);
+        renderizarTabuleiro(["", "", "", "", "", "", "", "", ""], "X");
+    } catch (error) {
+        document.getElementById("info").innerText = `Erro: ${error.message}`;
+    }
+}
+
+async function obterJogo() {
+    if (!gameId) return;
+    try {
+        let res = await fetch(`http://localhost:5000/api/games/${gameId}`);
+        let data = await res.json();
+        document.getElementById("info").innerText = JSON.stringify(data, null, 2);
+        renderizarTabuleiro(data.tabuleiro, data.turno);
+        document.getElementById("status").innerText = `Turno: ${data.turno}`;
+    } catch (error) {
+        document.getElementById("info").innerText = `Erro: ${error.message}`;
+    }
+}
+
+async function fazerJogada(pos) {
+    if (!gameId) return;
+    try {
+        let res = await fetch(`http://localhost:5000/api/games/${gameId}/move`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pos: pos })
+        });
+        let data = await res.json();
+        document.getElementById("info").innerText = JSON.stringify(data, null, 2);
+        renderizarTabuleiro(data.tabuleiro, data.turno);
+        document.getElementById("status").innerText = `Turno: ${data.turno}`;
+    } catch (error) {
+        document.getElementById("info").innerText = `Erro: ${error.message}`;
+    }
+}
+
+function renderizarTabuleiro(tabuleiro, turno) {
+    const board = document.getElementById("board");
+    board.innerHTML = "";
+    
+    for (let i = 0; i < 9; i++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.textContent = tabuleiro[i];
+        cell.onclick = () => fazerJogada(i);
+        board.appendChild(cell);
+    }
+}
+
+async function consultarRanking() {
+    const nome = document.getElementById("playerName").value;
+    if (!nome) {
+        alert("Por favor, digite um nome de jogador");
+        return;
+    }
+    
+    try {
+        let res = await fetch(`http://localhost:5000/api/ranking/${nome}`);
+        let data = await res.json();
+        document.getElementById("rankingResult").innerHTML = `
+            <p>Jogador: <strong>${data.nome}</strong></p>
+            <p>Ranking: <strong>${data.ranking}</strong></p>
+        `;
+        document.getElementById("info").innerText = JSON.stringify(data, null, 2);
+    } catch (error) {
+        document.getElementById("info").innerText = `Erro: ${error.message}`;
+    }
+}
+</script>
+</body>
+</html>
